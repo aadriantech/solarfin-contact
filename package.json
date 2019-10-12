@@ -19,6 +19,7 @@
     "vuex": "^3.0.1"
   },
   "devDependencies": {
+    "@mdi/font": "^4.5.95",
     "@types/jest": "^23.1.4",
     "@vue/cli-plugin-babel": "^3.12.0",
     "@vue/cli-plugin-pwa": "^3.12.0",

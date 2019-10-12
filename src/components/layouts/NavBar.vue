@@ -48,12 +48,12 @@
         route: '/',
       },
       about: {
-        icon: 'mdi-home',
+        icon: 'mdi-information-outline',
         text: 'About',
         route: '/about',
       },
       contacts: {
-        icon: 'contact-phone',
+        icon: 'mdi-contact-phone',
         text: 'Contacts',
         route: '/contacts',
       },
