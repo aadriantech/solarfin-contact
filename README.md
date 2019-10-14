@@ -5,6 +5,12 @@
 npm install
 ```
 
+## Create environment file .env.local
+```
+NODE_ENV=production
+VUE_APP_API_DOMAIN="https://API_DOMAIN"
+```
+
 ### Compiles and hot-reloads for development
 ```
 npm run serve
