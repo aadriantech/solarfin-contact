@@ -1,13 +1,13 @@
 <template>
   <v-data-table
     :headers="headers"
-    :items="desserts"
+    :items="contacts"
     sort-by="calories"
     class="elevation-1"
   >
     <template v-slot:top>
       <v-toolbar flat color="white">
-        <v-toolbar-title>My CRUD</v-toolbar-title>
+        <v-toolbar-title>Contacts</v-toolbar-title>
         <v-divider
           class="mx-4"
           inset
@@ -16,6 +16,7 @@
 
         <div class="flex-grow-1"></div>
 
+        <!-- START::Form Dialog -->
         <v-dialog v-model="dialog" max-width="500px">
           <template v-slot:activator="{ on }">
             <v-btn color="primary" dark class="mb-2" v-on="on">New Item</v-btn>
@@ -28,20 +29,34 @@
             <v-card-text>
               <v-container>
                 <v-row>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="editedItem.name" label="Dessert name"></v-text-field>
+                  <v-col cols="12" sm="6" md="6">
+                    <v-text-field v-model="contactForm.first_name" label="First Name"></v-text-field>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="editedItem.calories" label="Calories"></v-text-field>
+                  <v-col cols="12" sm="6" md="6">
+                    <v-text-field v-model="contactForm.last_name" label="Last Name"></v-text-field>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="editedItem.fat" label="Fat (g)"></v-text-field>
+                </v-row>
+
+                <v-row v-for="(phone, index) in contactForm.phones" v-bind:key="index" class="row">
+                  <v-col cols="10">
+                    <v-text-field v-model="contactForm.phones[index]" label="Phone Number"></v-text-field>
                   </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="editedItem.carbs" label="Carbs (g)"></v-text-field>
-                  </v-col>
-                  <v-col cols="12" sm="6" md="4">
-                    <v-text-field v-model="editedItem.protein" label="Protein (g)"></v-text-field>
+                  <v-col cols="2">
+                    <v-icon
+                      small
+                      class="mr-2"
+                      @click="removeLine(index)"
+                    >
+                      mdi-delete
+                    </v-icon>
+                    <v-icon
+                      small
+                      class="mr-2"
+                      v-if="(index + 1 === contactForm.phones.length)"
+                      @click="addLine"
+                    >
+                      mdi-plus-thick
+                    </v-icon>
                   </v-col>
                 </v-row>
               </v-container>
@@ -53,7 +68,7 @@
               <v-btn color="blue darken-1" text @click="save">Save</v-btn>
             </v-card-actions>
           </v-card>
-        </v-dialog>
+        </v-dialog><!-- END::Form Dialog -->
       </v-toolbar>
     </template>
 
@@ -63,13 +78,13 @@
         class="mr-2"
         @click="editItem(item)"
       >
-        edit
+        mdi-pencil
       </v-icon>
       <v-icon
         small
         @click="deleteItem(item)"
       >
-        delete
+        mdi-delete
       </v-icon>
     </template>
     <template v-slot:no-data>
@@ -80,6 +95,7 @@
 
 <script lang="ts">
   import {Component, Vue, Watch} from 'vue-property-decorator';
+  import ContactApiResource from '@/api/ContactApiResource';
 
   @Component({
     components: {},
@@ -90,157 +106,197 @@
     public dialog: boolean = false;
     public headers?: any = [
       {
-        text: 'Dessert (100g serving)',
+        text: 'First Name',
         align: 'left',
         sortable: false,
-        value: 'name',
+        value: 'first_name',
       },
-      {text: 'Calories', value: 'calories'},
-      {text: 'Fat (g)', value: 'fat'},
-      {text: 'Carbs (g)', value: 'carbs'},
-      {text: 'Protein (g)', value: 'protein'},
+      {
+        text: 'Last Name',
+        align: 'left',
+        sortable: false,
+        value: 'last_name',
+      },
+      {text: 'Phone', value: 'phone'},
+      {text: 'Created', value: 'created_at'},
+      {text: 'Updated', value: 'updated_at'},
       {text: 'Actions', value: 'action', sortable: false},
     ];
 
-    public desserts: any;
+    public contacts?: [{
+      first_name: string
+      last_name: string,
+      phones: [string],
+      created_at: string,
+      updated_at: string,
+    }];
+
     public editedIndex: number = -1;
-    public editedItem: any = {
-      name: '',
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
-    };
+    public contactForm: any;
 
     public defaultItem: any = {
-      name: '',
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
+      first_name: '',
+      last_name: '',
+      phones: [''],
     };
+
+    public blockRemoval: boolean = false;
 
     constructor() {
       super();
+      this.contacts = [{
+        first_name: 'no data',
+        last_name: 'no data',
+        phones: ['no data'],
+        created_at: 'no data',
+        updated_at: 'no data',
+      }];
+
+      this.contactForm = {
+        first_name: '',
+        last_name: '',
+        phones: [''],
+      };
     }
 
     /**
+     * Adds another index to the phones array
+     * used for adding phone input element to contact form
      *
+     * @return void
      */
+    public addLine(): boolean | void {
+      const phoneNumbers = this.contactForm.phones.length;
+      if (phoneNumbers >= 1) {
+        this.contactForm.phones.splice(phoneNumbers, 0, '');
+      }
+    }
+
+    public async initialize() {
+      // get data for data tables
+      const contactApiResource = new ContactApiResource();
+      const params = {
+        resource: this.contactForm,
+      };
+
+      return await contactApiResource
+        .setResourcePath('/contacts')
+        .setParams(params)
+        .get();
+    }
+
+    public removeLine(lineId: number) {
+      const phoneNumbers = this.contactForm.phones.length;
+      if (!this.blockRemoval && phoneNumbers > 1) {
+        this.contactForm.phones.splice(lineId, 1);
+      }
+    }
+
     get formTitle() {
       return this.editedIndex === -1 ? 'New Item' : 'Edit Item';
     }
 
+    /**
+     * Opens the contact form dialog
+     *
+     * @param value
+     * @return boolean
+     */
     @Watch('dialog')
     public onDialog(value: boolean) {
       return value || this.close();
     }
 
-    public created() {
-      this.initialize();
-    }
-
-    public initialize() {
-      this.desserts = [
-        {
-          name: 'Frozen Yogurt',
-          calories: 159,
-          fat: 6.0,
-          carbs: 24,
-          protein: 4.0,
-        },
-        {
-          name: 'Ice cream sandwich',
-          calories: 237,
-          fat: 9.0,
-          carbs: 37,
-          protein: 4.3,
-        },
-        {
-          name: 'Eclair',
-          calories: 262,
-          fat: 16.0,
-          carbs: 23,
-          protein: 6.0,
-        },
-        {
-          name: 'Cupcake',
-          calories: 305,
-          fat: 3.7,
-          carbs: 67,
-          protein: 4.3,
-        },
-        {
-          name: 'Gingerbread',
-          calories: 356,
-          fat: 16.0,
-          carbs: 49,
-          protein: 3.9,
-        },
-        {
-          name: 'Jelly bean',
-          calories: 375,
-          fat: 0.0,
-          carbs: 94,
-          protein: 0.0,
-        },
-        {
-          name: 'Lollipop',
-          calories: 392,
-          fat: 0.2,
-          carbs: 98,
-          protein: 0,
-        },
-        {
-          name: 'Honeycomb',
-          calories: 408,
-          fat: 3.2,
-          carbs: 87,
-          protein: 6.5,
-        },
-        {
-          name: 'Donut',
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-        },
-        {
-          name: 'KitKat',
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-        },
-      ];
+    @Watch('phones')
+    public onPhoneUpdate(value: boolean) {
+      this.blockRemoval = (this.contactForm.phones.length <= 1);
     }
 
     public editItem(item: any) {
-      this.editedIndex = this.desserts.indexOf(item);
-      this.editedItem = Object.assign({}, item);
-      this.dialog = true;
+      if (this.contacts) {
+        this.editedIndex = this.contacts.indexOf(item);
+        this.contactForm = Object.assign({}, item);
+        this.dialog = true;
+      }
     }
 
-    public deleteItem(item: any) {
-      const index = this.desserts.indexOf(item);
-      confirm('Are you sure you want to delete this item?') && this.desserts.splice(index, 1);
+    public deleteItem(item: any): any {
+      if (this.contacts) {
+        const index = this.contacts.indexOf(item);
+        return confirm('Are you sure you want to delete this item?') && this.contacts.splice(index, 1);
+      }
     }
 
     public close() {
       this.dialog = false;
       setTimeout(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
+        this.contactForm = Object.assign({}, this.defaultItem);
         this.editedIndex = -1;
       }, 300);
     }
 
-    public save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.desserts[this.editedIndex], this.editedItem);
-      } else {
-        this.desserts.push(this.editedItem);
+    /**
+     * Saves the form data
+     * sends data to the api endpoint
+     */
+    public async save() {
+
+      // add form data to contact model
+      if (this.contacts) {
+        this.contacts.push(this.contactForm);
       }
+
+      if (this.editedIndex > -1) {
+        // update the data table
+        // Object.assign(this.contacts[this.editedIndex], this.contactForm);
+
+        // send updated contact data to api
+        // blah blah
+      } else {
+        // inserts new record
+        await this.store();
+      }
+
+      // close dialog form
       this.close();
+    }
+
+    /**
+     * Inserts new record to api endpoint
+     *
+     * @return void
+     */
+    public async store() {
+      // send new contact data to api
+      const contactApiResource = new ContactApiResource();
+      const params = {
+        resource: this.contactForm,
+      };
+
+      return await contactApiResource
+        .setResourcePath('/contacts')
+        .setParams(params)
+        .post()
+        .then((response) => {
+          this.initialize();
+        });
+    }
+
+    public async update() {
+      // send new contact data to api
+      const contactApiResource = new ContactApiResource();
+      const params = {
+        id: '@TODO: ID HERE',
+        resource: this.contactForm,
+      };
+
+      return await contactApiResource
+        .setResourcePath('/contacts')
+        .setParams(params)
+        .patch()
+        .then((response) => {
+          this.initialize();
+        });
     }
   }
 </script>
