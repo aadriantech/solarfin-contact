@@ -48,7 +48,9 @@ export default class ContactApiResource implements ApiResourceInterface {
    */
   public async delete(): Promise<any> {
     this.resource = await Repository.delete(
-      `${this.resourcePathName}/${this.params.id}`);
+      // @ts-ignore
+      `${this.resourcePathName}/${this.params.id}`,
+    );
   }
 
   /**

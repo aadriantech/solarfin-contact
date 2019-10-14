@@ -247,11 +247,7 @@
           return await contactApiResource
             .setResourcePath('/contacts')
             .setParams(params)
-            .delete()
-            .then((response) => {
-              console.log(response);
-              console.log('deleted.');
-            });
+            .delete();
         }
       }
     }
