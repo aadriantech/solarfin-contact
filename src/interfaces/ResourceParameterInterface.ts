@@ -1,5 +1,5 @@
 interface ResourceParameterInterface {
-  resource: object;
+  resource?: object;
 }
 
 export default ResourceParameterInterface;

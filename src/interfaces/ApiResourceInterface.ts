@@ -30,6 +30,13 @@ interface ApiResourceInterface {
   get(): Promise<any>;
 
   /**
+   * Patch contact from the API Endpoint
+   *
+   * @returns {Promise<*>}
+   */
+  patch(): Promise<any>;
+
+  /**
    * Posts contact from the API Endpoint
    *
    * @returns {Promise<*>}

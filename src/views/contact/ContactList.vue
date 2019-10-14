@@ -159,6 +159,10 @@
       };
     }
 
+    public created() {
+      this.initialize();
+    }
+
     /**
      * Adds another index to the phones array
      * used for adding phone input element to contact form
@@ -172,17 +176,22 @@
       }
     }
 
+    /**
+     * Populate the data table with contact data
+     *
+     * @return Promise<any>
+     */
     public async initialize() {
       // get data for data tables
       const contactApiResource = new ContactApiResource();
-      const params = {
-        resource: this.contactForm,
-      };
 
       return await contactApiResource
         .setResourcePath('/contacts')
-        .setParams(params)
-        .get();
+        .get()
+        .then((response) => {
+          const {data} = response.data;
+          this.contacts = data;
+        });
     }
 
     public removeLine(lineId: number) {
@@ -220,10 +229,30 @@
       }
     }
 
-    public deleteItem(item: any): any {
+    /**
+     * Deletes a resource item from the api endpoint
+     *
+     * @return void
+     */
+    public async deleteItem(item: any): Promise<any> {
       if (this.contacts) {
         const index = this.contacts.indexOf(item);
-        return confirm('Are you sure you want to delete this item?') && this.contacts.splice(index, 1);
+        if (confirm('Are you sure you want to delete this item?') && this.contacts.splice(index, 1)) {
+          // get data for data tables
+          const contactApiResource = new ContactApiResource();
+          const params = {
+            resource: item,
+          };
+
+          return await contactApiResource
+            .setResourcePath('/contacts')
+            .setParams(params)
+            .delete()
+            .then((response) => {
+              console.log(response);
+              console.log('deleted.');
+            });
+        }
       }
     }
 

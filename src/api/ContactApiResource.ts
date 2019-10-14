@@ -46,6 +46,16 @@ export default class ContactApiResource implements ApiResourceInterface {
    *
    * @returns {Promise<*>}
    */
+  public async delete(): Promise<any> {
+    this.resource = await Repository.delete(
+      `${this.resourcePathName}/${this.params.id}`);
+  }
+
+  /**
+   * Retrieves resource from the API Endpoint
+   *
+   * @returns {Promise<*>}
+   */
   public async get(): Promise<any> {
     this.resource = await Repository.get(`${this.resourcePathName}`,
       {
