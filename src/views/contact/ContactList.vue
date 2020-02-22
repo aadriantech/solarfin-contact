@@ -252,6 +252,11 @@
       }
     }
 
+    /**
+     * Closes the dialog form
+     *
+     * @return void
+     */
     public close() {
       this.dialog = false;
       setTimeout(() => {
@@ -271,16 +276,7 @@
         this.contacts.push(this.contactForm);
       }
 
-      if (this.editedIndex > -1) {
-        // update the data table
-        // Object.assign(this.contacts[this.editedIndex], this.contactForm);
-
-        // send updated contact data to api
-        // blah blah
-      } else {
-        // inserts new record
-        await this.store();
-      }
+      await this.store();
 
       // close dialog form
       this.close();
@@ -311,7 +307,6 @@
       // send new contact data to api
       const contactApiResource = new ContactApiResource();
       const params = {
-        id: '@TODO: ID HERE',
         resource: this.contactForm,
       };
 
@@ -319,7 +314,7 @@
         .setResourcePath('/contacts')
         .setParams(params)
         .patch()
-        .then((response) => {
+        .then(() => {
           this.initialize();
         });
     }
